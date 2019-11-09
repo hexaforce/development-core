@@ -1,3 +1,11 @@
 .DS_Store
 .history/
 
+.project
+.settings/
+.classpath
+.factorypath
+
+client/target/
+server/target/
+common/target/
