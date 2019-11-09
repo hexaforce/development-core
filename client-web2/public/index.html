@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Web site created using create-react-app" />
+  <link rel="apple-touch-icon" href="logo192.png" />
+  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+  <title>React App</title>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+
+  <a id="download">Download
+    <button id="stop">Stop
+      <script>
+        let shouldStop = false;
+        let stopped = false;
+        const downloadLink = document.getElementById('download');
+        const stopButton = document.getElementById('stop');
+        stopButton.addEventListener('click', function () {
+          shouldStop = true;
+        })
+        var handleSuccess = function (stream) {
+          const options = { mimeType: 'video/webm;codecs=vp9' };
+          const recordedChunks = [];
+          const mediaRecorder = new MediaRecorder(stream, options);
+          mediaRecorder.addEventListener('dataavailable', function (e) {
+            if (e.data.size > 0) {
+              recordedChunks.push(e.data);
+            }
+            if (shouldStop === true && stopped === false) {
+              mediaRecorder.stop();
+              stopped = true;
+            }
+          });
+          mediaRecorder.addEventListener('stop', function () {
+            downloadLink.href = URL.createObjectURL(new Blob(recordedChunks));
+            downloadLink.download = 'acetest.wav';
+          });
+          mediaRecorder.start();
+        };
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(handleSuccess);
+
+      </script>
+</body>
+
+</html>
