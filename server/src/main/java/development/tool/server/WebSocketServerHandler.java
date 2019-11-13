@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class WebSocketServerHandler extends AbstractWebSocketHandler {
 
-	private final Map<String, InfiniteStreamRecognize> x = new ConcurrentHashMap<String, InfiniteStreamRecognize>();
+	private final Map<String, StreamRecognize> process = new ConcurrentHashMap<String, StreamRecognize>();
 
 	@Override
 	protected void handleTextMessage(WebSocketSession session, TextMessage message, String text) throws Exception {
@@ -30,22 +30,22 @@ public class WebSocketServerHandler extends AbstractWebSocketHandler {
 
 	@Override
 	protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message, byte[] binary) throws Exception {
-		x.get(session.getId()).getSharedQueue().put(ByteString.copyFrom(binary));
+		process.get(session.getId()).getSharedQueue().put(ByteString.copyFrom(binary));
 	}
 
 	@Override
 	protected void openSession(WebSocketSession session) {
 		log.info(session.getId());
-		InfiniteStreamRecognize t = new InfiniteStreamRecognize(session);
-		x.put(session.getId(), t);
-		new Thread(t).start();
+		StreamRecognize streamRecognize = new StreamRecognize(session);
+		process.put(session.getId(), streamRecognize);
+		new Thread(streamRecognize).start();
 	}
 
 	@Override
 	protected void closeSession(WebSocketSession session) {
 		log.info(session.getId());
-		x.get(session.getId()).setExecution(false);
-		x.remove(session.getId());
+		process.get(session.getId()).setExecution(false);
+		process.remove(session.getId());
 	}
 
 }

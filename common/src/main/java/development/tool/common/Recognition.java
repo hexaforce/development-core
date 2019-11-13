@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class RecognitionResponse {
+public class Recognition {
 	private String resultEndTime;
 	private String transcript;
 	private boolean _final;

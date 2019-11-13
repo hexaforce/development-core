@@ -28,13 +28,13 @@ import com.google.protobuf.ByteString;
 
 import development.tool.common.AnalyzeGoogle;
 import development.tool.common.KuromojiToken;
-import development.tool.common.RecognitionResponse;
+import development.tool.common.Recognition;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class InfiniteStreamRecognize implements Runnable {
+public class StreamRecognize implements Runnable {
 
 	// ~5 minutes(1 second time lag)
 	private static final int STREAMING_LIMIT = 290000;
@@ -44,7 +44,7 @@ public class InfiniteStreamRecognize implements Runnable {
 	@Getter
 	public volatile BlockingQueue<ByteString> sharedQueue = new LinkedBlockingQueue<ByteString>();
 
-	public InfiniteStreamRecognize(WebSocketSession session) {
+	public StreamRecognize(WebSocketSession session) {
 		this.session = session;
 	}
 
@@ -90,7 +90,7 @@ public class InfiniteStreamRecognize implements Runnable {
 
 					float confidence = alternative.getConfidence();
 
-					RecognitionResponse jsonElement = RecognitionResponse.builder()//
+					Recognition recognition = Recognition.builder()//
 							.resultEndTime(resultEndTime)//
 							.transcript(transcript)//
 							._final(_final)//
@@ -100,20 +100,20 @@ public class InfiniteStreamRecognize implements Runnable {
 
 					try {
 
-						log.info(jsonElement.toString());
+						log.info(recognition.toString());
 
 						if (session.isOpen()) {
 							if (_final) {
-								
-								jsonElement.setTokens(tokenize(transcript));
-								
+
+								recognition.setTokens(tokenize(transcript));
+
 								AnalyzeGoogle analyzeGoogle = google.analyzeText(transcript);
-								jsonElement.setSyntax(analyzeGoogle.getSyntax());
-								jsonElement.setEntities(analyzeGoogle.getEntities());
-								
-								session.sendMessage(new TextMessage(gson.toJson(jsonElement), true));
+								recognition.setSyntax(analyzeGoogle.getSyntax());
+								recognition.setEntities(analyzeGoogle.getEntities());
+
+								session.sendMessage(new TextMessage(gson.toJson(recognition), true));
 							} else {
-								session.sendMessage(new TextMessage(new Gson().toJson(jsonElement), true));
+								session.sendMessage(new TextMessage(new Gson().toJson(recognition), true));
 							}
 						}
 
@@ -125,9 +125,20 @@ public class InfiniteStreamRecognize implements Runnable {
 			}
 
 		}
-		
+
 		private List<KuromojiToken> tokenize(String transcript) {
-			return new Tokenizer().tokenize(transcript).stream().map(token -> new KuromojiToken(token.getPartOfSpeechLevel1(), token.getPartOfSpeechLevel2(), token.getPartOfSpeechLevel3(), token.getPartOfSpeechLevel4(), token.getConjugationType(), token.getConjugationForm(), token.getBaseForm(), token.getReading(), token.getPronunciation())).collect(Collectors.toList());
+			return new Tokenizer().tokenize(transcript).stream() //
+					.map(token -> new KuromojiToken( //
+							token.getPartOfSpeechLevel1(), //
+							token.getPartOfSpeechLevel2(), //
+							token.getPartOfSpeechLevel3(), //
+							token.getPartOfSpeechLevel4(), //
+							token.getConjugationType(), //
+							token.getConjugationForm(), //
+							token.getBaseForm(), //
+							token.getReading(), //
+							token.getPronunciation()))//
+					.collect(Collectors.toList());
 		}
 
 		@Override
@@ -148,8 +159,8 @@ public class InfiniteStreamRecognize implements Runnable {
 	};
 
 	// The first request in a streaming call has to be a configuration
-	private StreamingRecognizeRequest request = StreamingRecognizeRequest.newBuilder()//
-			.setStreamingConfig(streamingRecognitionConfig)//
+	private StreamingRecognizeRequest request = StreamingRecognizeRequest.newBuilder() //
+			.setStreamingConfig(streamingRecognitionConfig) //
 			.build();
 
 	private ClientStream<StreamingRecognizeRequest> clientStream;

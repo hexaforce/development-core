@@ -29,35 +29,80 @@ import lombok.extern.slf4j.Slf4j;
 public class LanguageAnalyzeGoogle {
 
 	public AnalyzeGoogle analyzeText(String transcript) {
+
 		try (LanguageServiceClient language = LanguageServiceClient.create()) {
-			Document doc = Document.newBuilder().setContent(transcript).setType(Type.PLAIN_TEXT).setLanguage("ja").build();
-			return new AnalyzeGoogle(analyzeEntitiesText(language, doc), analyzeSyntaxText(language, doc));
+
+			Document doc = Document.newBuilder()//
+					.setContent(transcript)//
+					.setType(Type.PLAIN_TEXT)//
+					.setLanguage("ja")//
+					.build();
+
+			return new AnalyzeGoogle(//
+					analyzeEntitiesText(language, doc), //
+					analyzeSyntaxText(language, doc) //
+			);
+
 		} catch (IOException e) {
 			log.error(e.getMessage(), e);
 		}
+
 		return null;
+
 	}
 
 	private List<EntitiesToken> analyzeEntitiesText(LanguageServiceClient language, Document doc) {
+
 		List<EntitiesToken> entitiesTokens = new ArrayList<>();
-		AnalyzeEntitiesRequest request = AnalyzeEntitiesRequest.newBuilder().setDocument(doc).setEncodingType(EncodingType.UTF16).build();
+
+		AnalyzeEntitiesRequest request = AnalyzeEntitiesRequest.newBuilder()//
+				.setDocument(doc)//
+				.setEncodingType(EncodingType.UTF16)//
+				.build();
+
 		AnalyzeEntitiesResponse response = language.analyzeEntities(request);
+
 		for (Entity entity : response.getEntitiesList()) {
 			for (EntityMention mention : entity.getMentionsList()) {
+
 				entity.getMetadataMap().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).forEach(log::info);
-				entitiesTokens.add(new EntitiesToken(entity.getName(), entity.getType(), entity.getSalience(), entity.getMetadataMap().entrySet(), mention.getText().getContent(), mention.getType()));
+
+				entitiesTokens.add(new EntitiesToken( //
+						entity.getName(), //
+						entity.getType(), //
+						entity.getSalience(), //
+						entity.getMetadataMap().entrySet(), //
+						mention.getText().getContent(), //
+						mention.getType() //
+				));
+
 			}
 		}
+
 		return entitiesTokens;
+
 	}
 
 	private List<SyntaxToken> analyzeSyntaxText(LanguageServiceClient language, Document doc) {
-		AnalyzeSyntaxRequest request = AnalyzeSyntaxRequest.newBuilder().setDocument(doc).setEncodingType(EncodingType.UTF16).build();
+
+		AnalyzeSyntaxRequest request = AnalyzeSyntaxRequest.newBuilder()//
+				.setDocument(doc)//
+				.setEncodingType(EncodingType.UTF16)//
+				.build();
+
 		AnalyzeSyntaxResponse response = language.analyzeSyntax(request);
+
 		for (Token token : response.getTokensList()) {
 			log.info(token.getLemma());
 		}
-		return response.getTokensList().stream().map(token -> japanese(token.getText(), token.getPartOfSpeech(), token.getDependencyEdge())).collect(Collectors.toList());
+
+		return response.getTokensList().stream() //
+				.map(token -> japanese(//
+						token.getText(), //
+						token.getPartOfSpeech(), //
+						token.getDependencyEdge()//
+				)) //
+				.collect(Collectors.toList());
 	}
 
 	private SyntaxToken japanese(TextSpan text, PartOfSpeech part, DependencyEdge edge) {
