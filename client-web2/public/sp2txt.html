@@ -1,111 +1,139 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <title>Speech Recognition Test</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <style type="text/css">
-      select {font-size:20px; border:1px; position: fixed; right: 80px; z-index: 1;}
-      button {color:red; font-size:50px; position: fixed; z-index: 1; right: 10px;}
-      #sound {position: fixed; z-index: 1; right:80px; top: 40px;}
-      div {font-size:20px; }
-      #speeching {color:red; }
-    </style>
-  </head>
-  <body>
 
-    <select id="lang">
-      <option value="ja-JP">Japanese</option>
-      <option value="en-US">English(US)</option>
-      <option value="en-GB">English(UK)</option>
-      <option value="fr-FR">French</option>
-      <option value="de-DE">German</option>
-      <option value="cmn-Hans-CN">Chinese</option>
-      <option value="ko-KR">Korean</option>
-    </select>
+<head>
+  <title>Speech Recognition Test</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <style type="text/css">
+    select {
+      font-size: 20px;
+      border: 1px;
+      position: fixed;
+      right: 80px;
+      z-index: 1;
+    }
 
-    <button id="button">●</button>
-    <a id="sound"></a>
-    <div id="text"></div>
-    <div id="speeching"></div>
+    button {
+      color: red;
+      font-size: 50px;
+      position: fixed;
+      z-index: 1;
+      right: 10px;
+    }
 
-    <script>
-      SpeechRecognition = webkitSpeechRecognition || SpeechRecognition;
-      const recognition = new SpeechRecognition();
-      if (!'SpeechRecognition' in window) {
-        alert('Web Speech API is not supported on this browser.');
+    #sound {
+      position: fixed;
+      z-index: 1;
+      right: 80px;
+      top: 40px;
+    }
+
+    div {
+      font-size: 20px;
+    }
+
+    #speeching {
+      color: red;
+    }
+  </style>
+</head>
+
+<body>
+
+  <select id="lang">
+    <option value="ja-JP">Japanese</option>
+    <option value="en-US">English(US)</option>
+    <option value="en-GB">English(UK)</option>
+    <option value="fr-FR">French</option>
+    <option value="de-DE">German</option>
+    <option value="cmn-Hans-CN">Chinese</option>
+    <option value="ko-KR">Korean</option>
+  </select>
+
+  <button id="button">●</button>
+  <a id="sound"></a>
+  <div id="text"></div>
+  <div id="speeching"></div>
+
+  <script>
+    SpeechRecognition = webkitSpeechRecognition || SpeechRecognition;
+    const recognition = new SpeechRecognition();
+    if (!'SpeechRecognition' in window) {
+      alert('Web Speech API is not supported on this browser.');
+    }
+
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    const btn = document.getElementById('button');
+    const text = document.getElementById('text');
+    const speeching = document.getElementById('speeching');
+    const lang = document.getElementById('lang');
+    var recording = false;
+
+    const sound = document.getElementById('sound');
+    var mediaRecorder;
+
+    btn.addEventListener('click', function () {
+      if (recording) {
+        recording = false;
+        recognition.stop();
+      } else {
+        recognition.lang = lang.value;
+        recognition.start();
+        recording = true;
+        btn.textContent = "■";
+        sound.textContent = "Recording...";
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(handleSuccess);
       }
+    });
 
-      recognition.interimResults = true;
-      recognition.continuous = false;
-
-      const btn = document.getElementById('button');
-      const text = document.getElementById('text');
-      const speeching = document.getElementById('speeching');
-      const lang = document.getElementById('lang');
-      var recording = false;
-
-      const sound = document.getElementById('sound');
-      var mediaRecorder;
-
-      btn.addEventListener('click' , function() {
-        if(recording) {
-          recording = false;
-          recognition.stop();
-        }else{
-          recognition.lang = lang.value;
-          recognition.start();
-          recording = true;
-          btn.textContent = "■";
-          sound.textContent = "Recording...";
-          navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(handleSuccess);
-        }
-      });
-
-      recognition.onresult = function(e){
-        speeching.innerText = '';
-        for (let i = e.resultIndex; i < e.results.length; i++){
-          let result = e.results[i][0].transcript;
-          if(e.results[i].isFinal){
-            text.innerHTML += '<div>'+result+'</div>';
-          } else {
-            speeching.innerText += result;
-            scrollBy( 0, 50 );
-          }
-        }
-      };
-
-      recognition.onend = function(){
-        if(recording){
-          recognition.lang = lang.value;
-          recognition.start();
+    recognition.onresult = function (e) {
+      speeching.innerText = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        let result = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          text.innerHTML += '<div>' + result + '</div>';
         } else {
-          btn.textContent = "●";
-          mediaRecorder.stop();
+          speeching.innerText += result;
+          scrollBy(0, 50);
+        }
+      }
+    };
+
+    recognition.onend = function () {
+      if (recording) {
+        recognition.lang = lang.value;
+        recognition.start();
+      } else {
+        btn.textContent = "●";
+        mediaRecorder.stop();
+      }
+    };
+
+    var handleSuccess = function (stream) {
+      var recordedChunks = [];
+      var options = { mimeType: 'audio/webm' };
+      mediaRecorder = new MediaRecorder(stream, options);
+
+      mediaRecorder.ondataavailable = function (e) {
+        if (e.data.size > 0) {
+          recordedChunks.push(e.data);
         }
       };
 
-      var handleSuccess = function(stream) {
-        var recordedChunks = [];
-        var options = {mimeType: 'audio/webm'};
-        mediaRecorder = new MediaRecorder(stream, options);
-
-        mediaRecorder.ondataavailable = function(e) {
-          if (e.data.size > 0) {
-            recordedChunks.push(e.data);
-          }
-        };
-
-        mediaRecorder.onstop = function() {
-          var d = new Date();
-          var fn = ((((d.getFullYear()*100 + d.getMonth()+1)*100 + d.getDate())*100
-                    + d.getHours())*100 + d.getMinutes())*100 + d.getMinutes();
-          sound.href = URL.createObjectURL(new Blob(recordedChunks));
-          sound.textContent = "Get Audio";
-          sound.download = fn+".webm";
-        };
-
-        mediaRecorder.start();
+      mediaRecorder.onstop = function () {
+        var d = new Date();
+        var fn = ((((d.getFullYear() * 100 + d.getMonth() + 1) * 100 + d.getDate()) * 100
+          + d.getHours()) * 100 + d.getMinutes()) * 100 + d.getMinutes();
+        sound.href = URL.createObjectURL(new Blob(recordedChunks));
+        sound.textContent = "Get Audio";
+        sound.download = fn + ".webm";
       };
-    </script>
-  </body>
+
+      mediaRecorder.start();
+    };
+  </script>
+</body>
+
 </html>
